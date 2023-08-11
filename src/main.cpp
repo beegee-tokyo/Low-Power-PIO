@@ -79,7 +79,7 @@ void setup_app(void)
 	// Set firmware version
 	api_set_version(SW_VERSION_1, SW_VERSION_2, SW_VERSION_3);
 
-	g_enable_ble = false;
+	g_enable_ble = true;
 }
 
 /**
@@ -93,6 +93,8 @@ bool init_app(void)
 	MYLOG("APP", "init_app");
 	pinMode(WB_IO2, OUTPUT);
 	digitalWrite(WB_IO2, LOW);
+	restart_advertising(30);
+
 	return true;
 }
 
