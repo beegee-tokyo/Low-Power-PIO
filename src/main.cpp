@@ -229,25 +229,32 @@ void lora_data_handler(void)
 	{
 		g_task_event_type &= N_LORA_TX_FIN;
 
-		if (g_lorawan_settings.confirmed_msg_enabled == LMH_UNCONFIRMED_MSG)
+		if (g_lorawan_settings.lorawan_enable)
 		{
-			MYLOG("APP", "LPWAN TX cycle finished");
+			if (g_lorawan_settings.confirmed_msg_enabled == LMH_UNCONFIRMED_MSG)
+			{
+				MYLOG("APP", "LPWAN TX cycle finished");
+			}
+			else
+			{
+				MYLOG("APP", "LPWAN TX cycle %s", g_rx_fin_result ? "finished ACK" : "failed NAK");
+			}
+			if (!g_rx_fin_result)
+			{
+				// Increase fail send counter
+				send_fail++;
+
+				if (send_fail == 10)
+				{
+					// Too many failed sendings, reset node and try to rejoin
+					delay(100);
+					api_reset();
+				}
+			}
 		}
 		else
 		{
-			MYLOG("APP", "LPWAN TX cycle %s", g_rx_fin_result ? "finished ACK" : "failed NAK");
-		}
-		if (!g_rx_fin_result)
-		{
-			// Increase fail send counter
-			send_fail++;
-
-			if (send_fail == 10)
-			{
-				// Too many failed sendings, reset node and try to rejoin
-				delay(100);
-				api_reset();
-			}
+			MYLOG("APP", "P2P TX finished");
 		}
 	}
 }
