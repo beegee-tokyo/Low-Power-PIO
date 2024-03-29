@@ -53,6 +53,9 @@ uint8_t send_fail = 0;
 /** Set the device name, max length is 10 characters */
 char g_ble_dev_name[10] = "RAK-LP";
 
+/** Payload */
+WisCayenne payload(255);
+
 /**
  * @brief Initial setup of the application (before LoRaWAN and BLE setup)
  *
@@ -79,6 +82,7 @@ void setup_app(void)
 	// Set firmware version
 	api_set_version(SW_VERSION_1, SW_VERSION_2, SW_VERSION_3);
 
+	MYLOG("APP", "Setup application");
 	g_enable_ble = true;
 }
 
@@ -90,7 +94,7 @@ void setup_app(void)
  */
 bool init_app(void)
 {
-	MYLOG("APP", "init_app");
+	MYLOG("APP", "Initialize application");
 	pinMode(WB_IO2, OUTPUT);
 	digitalWrite(WB_IO2, LOW);
 	restart_advertising(30);
@@ -112,16 +116,26 @@ void app_event_handler(void)
 	{
 		g_task_event_type &= N_STATUS;
 		MYLOG("APP", "Timer wakeup");
+		digitalWrite(WB_IO2, HIGH);
 
-		// Dummy packet
-		uint8_t dummy_packet[] = {0x01, 0x74, 0x00, 0x55};
+		// Prepare payload
+		payload.reset();
+
+		// Get Battery status
+		float batt_level_f = 0.0;
+		for (int readings = 0; readings < 10; readings++)
+		{
+			batt_level_f += read_batt();
+		}
+		batt_level_f = batt_level_f / 10;
+		payload.addVoltage(LPP_CHANNEL_BATT, batt_level_f / 1000.0);
 
 		if (g_lorawan_settings.lorawan_enable)
 		{
 			if (g_lpwan_has_joined)
 			{
 
-				lmh_error_status result = send_lora_packet(dummy_packet, 4, 2);
+				lmh_error_status result = send_lora_packet(payload.getBuffer(), payload.getSize(), 2);
 				switch (result)
 				{
 				case LMH_SUCCESS:
@@ -142,8 +156,9 @@ void app_event_handler(void)
 		}
 		else
 		{
-			send_p2p_packet(dummy_packet, 4);
+			send_p2p_packet(payload.getBuffer(), payload.getSize());
 		}
+		digitalWrite(WB_IO2, LOW);
 	}
 }
 
