@@ -99,6 +99,8 @@ bool init_app(void)
 	digitalWrite(WB_IO2, LOW);
 	restart_advertising(30);
 
+	// Set Application version
+	snprintf(g_custom_fw_ver, 63, "WisBlock Low Power V%d.%d.%d", SW_VERSION_1, SW_VERSION_2, SW_VERSION_3);
 	return true;
 }
 
@@ -207,6 +209,20 @@ void lora_data_handler(void)
 		if (g_join_result)
 		{
 			MYLOG("APP", "Successfully joined network");
+			uint8_t session_key[16];
+			lmh_getNwSkey(session_key);
+			MYLOG("APP", "NwSkey = %02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X",
+				  session_key[0], session_key[1], session_key[2], session_key[3],
+				  session_key[4], session_key[5], session_key[6], session_key[7],
+				  session_key[8], session_key[9], session_key[10], session_key[11],
+				  session_key[12], session_key[13], session_key[14], session_key[15]);
+			lmh_getAppSkey(session_key);
+			MYLOG("APP", "AppSkey = %02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X",
+				  session_key[0], session_key[1], session_key[2], session_key[3],
+				  session_key[4], session_key[5], session_key[6], session_key[7],
+				  session_key[8], session_key[9], session_key[10], session_key[11],
+				  session_key[12], session_key[13], session_key[14], session_key[15]);
+			MYLOG("APP", "DevAddr = %04LX", LoRaMacDevAddr);
 		}
 		else
 		{
@@ -227,7 +243,7 @@ void lora_data_handler(void)
 		/**************************************************************/
 		g_task_event_type &= N_LORA_DATA;
 		MYLOG("APP", "Received package over LoRa");
-		MYLOG("APP", "Last RSSI %d", g_last_rssi);
+		MYLOG("APP", "RSSI %d SNR %d", g_last_rssi, g_last_snr);
 
 		char log_buff[g_rx_data_len * 3] = {0};
 		uint8_t log_idx = 0;
